@@ -1,2 +1,17 @@
-# hardware-inputs
-classes for manage hardware input devices for Arduino and ESP32
+# Hardware-Inputs
+ボタン,トグルスイッチ,ジョイスティックの入力管理ライブラリ  
+
+## 使い方
+### Kiban::Button
+### Kiban::Toggle
+### Kiban::Joystick
+### vPushSwitch<Btn,T>
+任意のデジタル入力を仮想のプッシュスイッチ化するクラス  
+- テンプレート引数Btnにはデジタル入力を受け取るクラスを指定し、Tには入力値を取得する関数のデータ型(デフォルトではboolだが-1/0/1を返すintなども可能)を指定する。  
+初期化時に入力を受け取るクラスのインスタンスと入力を受け取るメンバ関数のポインタを渡す(メンバ関数ポインタは後から`attachFunc`関数で渡すことも可能)  
+`state_num`はとりうる状態の数, `ignore_time`は連続した入力を無視する時間の幅  
+
+### vJoystick<Joy>
+
+## 注意
+

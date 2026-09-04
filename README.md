@@ -1,17 +1,80 @@
 # Hardware-Inputs
-ボタン,トグルスイッチ,ジョイスティックの入力管理ライブラリ  
 
-## 使い方
-### Kiban::Button
-### Kiban::Toggle
-### Kiban::Joystick
-### vPushSwitch<Btn,T>
-任意のデジタル入力を仮想のプッシュスイッチ化するクラス  
-- テンプレート引数Btnにはデジタル入力を受け取るクラスを指定し、Tには入力値を取得する関数のデータ型(デフォルトではboolだが-1/0/1を返すintなども可能)を指定する。  
-初期化時に入力を受け取るクラスのインスタンスと入力を受け取るメンバ関数のポインタを渡す(メンバ関数ポインタは後から`attachFunc`関数で渡すことも可能)  
-`state_num`はとりうる状態の数, `ignore_time`は連続した入力を無視する時間の幅  
+Arduino / ESP32 向けのハードウェア入力管理ライブラリです。  
+ボタン、トグルスイッチ、ジョイスティック入力を扱う基本クラスと、状態管理しやすい仮想入力クラスを提供します。
 
-### vJoystick<Joy>
+## 提供クラス
+
+### `Kiban::Button`
+- 1つのデジタル入力をボタンとして扱います
+- `attach(pin, pullup)` で初期化し、`readPressed()` で押下状態を取得します
+
+### `Kiban::Toggle`
+- 2つのボタン入力から上/下のトグル入力を作ります
+- `readTilted()` の戻り値は **上: 1 / 中立: 0 / 下: -1** です
+
+### `Kiban::Joystick`
+- X/Y のアナログ入力 + 押し込みボタンを扱います
+- `setCenter()` で現在値を中心として補正できます
+- `readX()`, `readY()` は中心との差分を返します
+
+### `vPushSwitch<Btn, T>`
+- 任意の入力クラスを仮想プッシュスイッチとして扱うテンプレートクラスです
+- `update()` をループ内で呼ぶと、押下エッジで状態を進めます
+- `state_num` は循環する状態数、`ignore_time` はチャタリング等を無視する時間[ms]です
+
+### `vJoyStick<Joy>`
+- ジョイスティック入力を更新し、デッドゾーン処理後の値で判定できます
+- `calcRadius()`, `calcAngleRad()`, `calcAngleDeg()` で極座標値を取得できます
+- `isInnerXY(...)`, `isInnerRTheta(...)` で範囲判定できます
+
+## 基本的な使い方
+
+```cpp
+#include "HardwareInput.h"
+
+const uint8_t PIN_BUTTON = 2;
+Kiban::Button button;
+vPushSwitch<Kiban::Button, bool> modeSwitch(button, 3, 20);
+
+void setup() {
+  button.attach(&PIN_BUTTON, true);
+  modeSwitch.attachFunc(&Kiban::Button::readPressed);
+}
+
+void loop() {
+  modeSwitch.update();
+  int mode = modeSwitch.getState();
+}
+```
+
+## ジョイスティックの例
+
+```cpp
+#include "HardwareInput.h"
+
+const uint8_t PIN_X = 34;
+const uint8_t PIN_Y = 35;
+const uint8_t PIN_SW = 25;
+
+Kiban::Joystick joystick;
+vJoyStick<Kiban::Joystick> vjoy(joystick);
+
+void setup() {
+  joystick.attach(&PIN_X, &PIN_Y, &PIN_SW, true);
+  joystick.setCenter();
+  vjoy.attachFunc(&Kiban::Joystick::readX, &Kiban::Joystick::readY, 20, 20);
+}
+
+void loop() {
+  vjoy.update();
+  if (vjoy.isInnerRTheta(100, 2000, 315, 45)) {
+    // 右方向の入力
+  }
+}
+```
 
 ## 注意
 
+- `update()` を定期的に呼ばないと仮想入力クラスの状態は更新されません
+- `Kiban::Button` と `Kiban::Joystick` の押し込みボタン入力は、デフォルトでプルアップ前提（押下時 LOW）です

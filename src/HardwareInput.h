@@ -42,11 +42,11 @@ public:
   void attach(const uint8_t* pin, bool pullup = true) {
     this->pin = pin;
     this->pulluped = pullup;
-    #ifdef ESP32
-      pinMode(*pin, this->pulluped && *pin < 34 ? INPUT_PULLUP : INPUT);
-    #else
-      pinMode(*pin, this->pulluped ? INPUT_PULLUP : INPUT);
-    #endif
+#ifdef ESP32
+    pinMode(*pin, this->pulluped && *pin < 34 ? INPUT_PULLUP : INPUT);
+#else
+    pinMode(*pin, this->pulluped ? INPUT_PULLUP : INPUT);
+#endif
   }
 
   /**
@@ -127,7 +127,7 @@ public:
   /**
    * @brief デフォルトコンストラクタ
    */
-  Joystick(): button{} {}
+  Joystick() : button{} {}
 
   /**
    * @brief ジョイスティックの各ピンを設定する
@@ -167,7 +167,7 @@ public:
    * @brief 現在のアナログ値を中心値として設定する
    */
   void setCenter() {
-    if (this->pinX != nullptr && this->pinY != nullptr){
+    if (this->pinX != nullptr && this->pinY != nullptr) {
       this->setCenter(analogRead(*pinX), analogRead(*pinY));
     }
   }
@@ -196,4 +196,5 @@ public:
     return button.readPressed();
   }
 };
+
 };

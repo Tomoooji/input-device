@@ -19,15 +19,15 @@
  * @brief 入力値から循環状態を選択する抽象基底クラス
  * @tparam T 入力値型（bool, int など）
  */
-template <typename T = bool>
-class StateSelector{
+template<typename T = bool>
+class StateSelector {
 protected:
   bool is_pressed = false;
   const int state_num;
   int current_state;
   const unsigned long retrriger_delay;
   unsigned long last_release_time;
-  
+
 public:
   /**
    * @brief コンストラクタ
@@ -55,7 +55,7 @@ protected:
    * @brief 入力値から内部状態を更新する
    * @param reading 現在の入力値（押下時は 1/true を想定）
    */
-  void _update(T reading){
+  void _update(T reading) {
     if (reading && !this->is_pressed) {
       if (millis() - this->last_release_time > this->retrriger_delay) {
         this->current_state = (this->state_num + this->current_state + reading) % this->state_num;
@@ -64,17 +64,16 @@ protected:
     } else if (!reading && this->is_pressed) {
       this->is_pressed = false;
       this->last_release_time = millis();
-    }    
+    }
   }
-  
 };
 
 /**
  * @brief 関数ポインタ入力で状態更新する StateSelector 実装
  * @tparam T 入力値型（bool, int など）
  */
-template <typename T = bool>
-class StateSelectorFunc : public StateSelector<T>{
+template<typename T = bool>
+class StateSelectorFunc : public StateSelector<T> {
 private:
   T (*read_func)(void*);
   void* context;
@@ -87,9 +86,9 @@ public:
    * @param retrriger_delay 押下後の再入力無視時間[ms]
    */
   StateSelectorFunc(T (*readFunction)(void*) = nullptr, void* context = nullptr, const int state_num = 2, const unsigned long retrriger_delay = 10)
-    : read_func(readFunction), context(context), StateSelector<T>(state_num, retrriger_delay){}
+    : read_func(readFunction), context(context), StateSelector<T>(state_num, retrriger_delay) {}
 
-   /**
+  /**
    * @brief 委譲コンストラクタ
    * @param state_num 状態数（0 〜 state_num-1 を循環）
    * @param retrriger_delay 押下後の再入力無視時間[ms]
@@ -103,7 +102,7 @@ public:
    * @param readFunction 入力関数
    * @param context コンテキスト(入力関数に渡す引数)
    */
-  void attachFunc(T (*readFunction)(void*), void* context){
+  void attachFunc(T (*readFunction)(void*), void* context) {
     this->read_func = readFunction;
     this->context = context;
   }
@@ -111,8 +110,8 @@ public:
   /**
    * @brief 入力値を読み取り、状態遷移処理を実行する
    */
-  void update() override{
-    if(this->read_func != nullptr){
+  void update() override {
+    if (this->read_func != nullptr) {
       this->_update(this->read_func(this->context));
     }
   }
@@ -128,7 +127,7 @@ template<class Btn = Kiban::Button, typename T = bool>
 class StateSelectorMember : public StateSelector<T> {
 private:
   Btn& object;
-  T(Btn::*read_func)();
+  T (Btn::*read_func)();
 
 public:
   /**
@@ -139,7 +138,7 @@ public:
    * @param retrriger_delay 押下判定後に再入力を無視する時間[ms]
    */
   StateSelectorMember(Btn& object, T (Btn::*read_function)() = nullptr, const int state_num = 2, const unsigned long retrriger_delay = 10)
-    : object(object), read_func(read_function) ,StateSelector<T>(state_num, retrriger_delay) {
+    : object(object), read_func(read_function), StateSelector<T>(state_num, retrriger_delay) {
   }
 
   /**
@@ -168,7 +167,6 @@ public:
       this->_update((object.*read_func)());
     }
   }
-  
 };
 
 /**
@@ -188,19 +186,24 @@ template<class Joy = Kiban::Joystick>
 class VectorStick {
 private:
   Joy& joystick;
-  int (Joy::*x_read_func)() = nullptr;
-  int (Joy::*y_read_func)() = nullptr;
+  int (Joy::*x_read_func)();
+  int (Joy::*y_read_func)();
   int x_value = 0;
   int y_value = 0;
-  int x_ignore_range = 20;
-  int y_ignore_range = 20;
+  int x_ignore_range;
+  int y_ignore_range;
 
 public:
   /**
    * @brief コンストラクタ
    * @param joystick 入力読み取り元ジョイスティックオブジェクト
+   * @param xReadFunction X軸入力読み取り関数
+   * @param yReadFunction Y軸入力読み取り関数
+   * @param x_ignore_range X軸デッドゾーン閾値
+   * @param y_ignore_range Y軸デッドゾーン閾値
    */
-  VectorStick(Joy& joystick) : joystick(joystick) {}
+  VectorStick(Joy& joystick, int (Joy::*xReadFunction)() = nullptr, int (Joy::*yReadFunction)() = nullptr, int x_ignore_range = 20, int y_ignore_range = 20)
+    : joystick(joystick), x_read_func(xReadFunction), y_read_func(yReadFunction), x_ignore_range(x_ignore_range), y_ignore_range(y_ignore_range){}
 
   /**
    * @brief X/Y入力読み取り関数とデッドゾーンを設定する
@@ -234,11 +237,11 @@ public:
    */
   float calcRadius() const {
     if (this->x_read_func != nullptr && this->y_read_func != nullptr) {
-      #ifdef ESP32
-        return hypotf(this->x_value, this->y_value);
-      #else
-        return sqrt(sq(this->x_value) + sq(this->y_value));
-      #endif
+#ifdef ESP32
+      return hypotf(this->x_value, this->y_value);
+#else
+      return sqrt(sq(this->x_value) + sq(this->y_value));
+#endif
     }
     return 0.0f;
   }
@@ -280,8 +283,8 @@ public:
    * @param y_area Y範囲（[0]:下限, [1]:上限）
    * @return 範囲内なら true
    */
-  bool isInnerXY(int x_area[2], int y_area[2]){
-    return this->isInnerXY(x_area[0],x_area[1],y_area[0],y_area[1]);
+  bool isInnerXY(int x_area[2], int y_area[2]) {
+    return this->isInnerXY(x_area[0], x_area[1], y_area[0], y_area[1]);
   }
 
   /**
@@ -303,7 +306,7 @@ public:
    * @param theta_range 角度範囲（[0]:下限, [1]:上限）[deg]
    * @return 範囲内なら true
    */
-  bool isInnerTheta(float r_range[2], float theta_range[2]){
-    return this->isInnerRTheta(r_range[0],r_range[1],theta_range[0],theta_range[1]);
+  bool isInnerTheta(float r_range[2], float theta_range[2]) {
+    return this->isInnerRTheta(r_range[0], r_range[1], theta_range[0], theta_range[1]);
   }
 };

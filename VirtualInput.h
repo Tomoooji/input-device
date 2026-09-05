@@ -213,7 +213,7 @@ public:
    */
   float calcRadius() const {
     if (this->x_read_func != nullptr && this->y_read_func != nullptr) {
-      #ifdef(ESP32)
+      #ifdef ESP32
         return hypotf(this->x_value, this->y_value);
       #else
         return sqrt(sq(this->x_value) + sq(this->y_value));

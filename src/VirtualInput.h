@@ -1,7 +1,10 @@
 /**
  * @file VirtualInput.h
- * @brief 
- * 
+ * @brief 入力デバイスを高レベル状態として扱う仮想入力クラス群
+ *
+ * ボタン入力を状態遷移として扱う StateSelector 系クラスと、
+ * ジョイスティック入力をベクトルとして扱う VectorStick を提供します。
+ *
  * @author Tomoooji (https://github.com/Tomoooji)
  * @version 0.1
  * @date 2026-09-05
@@ -12,6 +15,10 @@
 #include <Arduino.h>
 #include <HardwareInput.h>
 
+/**
+ * @brief 入力値から循環状態を選択する抽象基底クラス
+ * @tparam T 入力値型（bool, int など）
+ */
 template <typename T = bool>
 class StateSelector{
 protected:
@@ -22,9 +29,17 @@ protected:
   unsigned long last_release_time;
   
 public:
+  /**
+   * @brief コンストラクタ
+   * @param state_num 状態数（0 〜 state_num-1 を循環）
+   * @param retrriger_delay 押下後の再入力無視時間[ms]
+   */
   StateSelector(const int state_num, const unsigned long retrriger_delay)
    : state_num(state_num), current_state(0), retrriger_delay(retrriger_delay), last_release_time(0) {}
 
+  /**
+   * @brief 入力状態を更新する（派生クラス実装）
+   */
   virtual void update() = 0;
 
   /**
@@ -36,9 +51,13 @@ public:
   }
 
 protected:
+  /**
+   * @brief 入力値から内部状態を更新する
+   * @param reading 現在の入力値（押下時は 1/true を想定）
+   */
   void _update(T reading){
     if (reading && !this->is_pressed) {
-      if (millis() - this->last_release_time > this->ignore_time) {
+      if (millis() - this->last_release_time > this->retrriger_delay) {
         this->current_state = (this->state_num + this->current_state + reading) % this->state_num;
         this->is_pressed = true;
       }
@@ -50,20 +69,38 @@ protected:
   
 };
 
+/**
+ * @brief 関数ポインタ入力で状態更新する StateSelector 実装
+ * @tparam T 入力値型（bool, int など）
+ */
 template <typename T = bool>
 class StateSelectorFunc : public StateSelector<T>{
 private:
   T (*read_func)(void*);
   void* context;
+
 public:
+  /**
+   * @brief コンストラクタ
+   * @param state_num 状態数（0 〜 state_num-1 を循環）
+   * @param retrriger_delay 押下後の再入力無視時間[ms]
+   */
   StateSelectorFunc(const int state_num, const unsigned long retrriger_delay)
    : read_func(nullptr), context(nullptr),StateSelector<T>(state_num, retrriger_delay){}
 
-  void attachFunc(){
+  /**
+   * @brief 入力関数とコンテキストを登録する
+   * @param readFunction 
+   * @param context 
+   */
+  void attachFunc(T (*readFunction)(void*), void* context){
     this->read_func = readFunction;
     this->context = context;
   }
 
+  /**
+   * @brief 入力値を読み取り、状態遷移処理を実行する
+   */
   void update() override{
     if(this->read_func != nullptr){
       this->_update(this->read_func(this->context));
@@ -176,7 +213,7 @@ public:
    */
   float calcRadius() const {
     if (this->x_read_func != nullptr && this->y_read_func != nullptr) {
-      #ifdef(ESP32)
+      #ifdef ESP32
         return hypotf(this->x_value, this->y_value);
       #else
         return sqrt(sq(this->x_value) + sq(this->y_value));
@@ -232,7 +269,13 @@ public:
     float angle = calcAngleDeg();
     return (radius >= r_min && radius <= r_max) && (theta_max > theta_min ? (angle >= theta_min && angle <= theta_max) : (angle >= theta_min || angle <= theta_max));
   }
-  bool isInnerrTheta(float r_range[2], float theta_range[2]){
+  /**
+   * @brief 極座標範囲配列版の範囲判定
+   * @param r_range 半径範囲（[0]:下限, [1]:上限）
+   * @param theta_range 角度範囲（[0]:下限, [1]:上限）[deg]
+   * @return 範囲内なら true
+   */
+  bool isInnerTheta(float r_range[2], float theta_range[2]){
     return this->isInnerRTheta(r_range[0],r_range[1],theta_range[0],theta_range[1]);
   }
 };

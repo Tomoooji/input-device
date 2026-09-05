@@ -1,7 +1,10 @@
-# Hardware-Inputs
+# input-device
 
 Arduino / ESP32 向けのハードウェア入力管理ライブラリです。  
 ボタン、トグルスイッチ、ジョイスティック入力を扱う基本クラスと、状態管理しやすい仮想入力クラスを提供します。
+
+- 基本入力クラス: `HardwareInput.h`
+- 仮想入力クラス: `VirtualInput.h`
 
 ## 提供クラス
 
@@ -18,12 +21,12 @@ Arduino / ESP32 向けのハードウェア入力管理ライブラリです。
 - `setCenter()` で現在値を中心として補正できます
 - `readX()`, `readY()` は中心との差分を返します
 
-### `vPushSwitch<Btn, T>`
+### `StateSelectorMember<Btn, T>`
 - 任意の入力クラスを仮想プッシュスイッチとして扱うテンプレートクラスです
 - `update()` をループ内で呼ぶと、押下エッジで状態を進めます
-- `state_num` は循環する状態数、`ignore_time` はチャタリング等を無視する時間[ms]です
+- `state_num` は循環する状態数、`retrriger_delay` は再入力を無視する時間[ms]です
 
-### `vJoyStick<Joy>`
+### `VectorStick<Joy>`
 - ジョイスティック入力を更新し、デッドゾーン処理後の値で判定できます
 - `calcRadius()`, `calcAngleRad()`, `calcAngleDeg()` で極座標値を取得できます
 - `isInnerXY(...)`, `isInnerRTheta(...)` で範囲判定できます
@@ -32,10 +35,11 @@ Arduino / ESP32 向けのハードウェア入力管理ライブラリです。
 
 ```cpp
 #include "HardwareInput.h"
+#include "VirtualInput.h"
 
 const uint8_t PIN_BUTTON = 2;
 Kiban::Button button;
-vPushSwitch<Kiban::Button, bool> modeSwitch(button, 3, 20);
+StateSelectorMember<Kiban::Button, bool> modeSwitch(button, 3, 20);
 
 void setup() {
   button.attach(&PIN_BUTTON, true);
@@ -52,13 +56,14 @@ void loop() {
 
 ```cpp
 #include "HardwareInput.h"
+#include "VirtualInput.h"
 
 const uint8_t PIN_X = 34;
 const uint8_t PIN_Y = 35;
 const uint8_t PIN_SW = 25;
 
 Kiban::Joystick joystick;
-vJoyStick<Kiban::Joystick> vjoy(joystick);
+VectorStick<Kiban::Joystick> vjoy(joystick);
 
 void setup() {
   joystick.attach(&PIN_X, &PIN_Y, &PIN_SW, true);

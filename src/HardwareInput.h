@@ -6,7 +6,7 @@
  *
  * @author Tomoooji (https://github.com/Tomoooji)
  * @version 0.1
- * @date 2026-09-03
+ * @date 2026-09-05
  * @copyright Copyright (c) 2026
  */
 
@@ -42,11 +42,11 @@ public:
   void attach(const uint8_t* pin, bool pullup = true) {
     this->pin = pin;
     this->pulluped = pullup;
-#if defined(ESP32)
-    pinMode(*pin, this->pulluped && *pin < 34 ? INPUT_PULLUP : INPUT);
-#else
-    pinMode(*pin, this->pulluped ? INPUT_PULLUP : INPUT);
-#endif
+    #ifdef ESP32
+      pinMode(*pin, this->pulluped && *pin < 34 ? INPUT_PULLUP : INPUT);
+    #else
+      pinMode(*pin, this->pulluped ? INPUT_PULLUP : INPUT);
+    #endif
   }
 
   /**
@@ -70,8 +70,7 @@ public:
   /**
    * @brief デフォルトコンストラクタ
    */
-  Toggle()
-    : button{} {}
+  Toggle() : button{} {}
 
   /**
    * @brief 上側/下側トグル入力ピンを設定する
@@ -168,7 +167,9 @@ public:
    * @brief 現在のアナログ値を中心値として設定する
    */
   void setCenter() {
-    this->setCenter(analogRead(*pinX), analogRead(*pinY));
+    if (this->pinX != nullptr && this->pinY != nullptr){
+      this->setCenter(analogRead(*pinX), analogRead(*pinY));
+    }
   }
 
   /**
@@ -176,7 +177,7 @@ public:
    * @return X軸差分値
    */
   int readX() {
-    return analogRead(*pinX) - this->xCenter;
+    return this->pinX == nullptr ? 0 : analogRead(*pinX) - this->xCenter;
   }
 
   /**
@@ -184,7 +185,7 @@ public:
    * @return Y軸差分値
    */
   int readY() {
-    return analogRead(*pinY) - this->yCenter;
+    return this->pinY == nullptr ? 0 : analogRead(*pinY) - this->yCenter;
   }
 
   /**

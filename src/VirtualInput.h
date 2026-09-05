@@ -35,7 +35,7 @@ public:
    * @param retrriger_delay 押下後の再入力無視時間[ms]
    */
   StateSelector(const int state_num, const unsigned long retrriger_delay)
-   : state_num(state_num), current_state(0), retrriger_delay(retrriger_delay), last_release_time(0) {}
+    : state_num(state_num), current_state(0), retrriger_delay(retrriger_delay), last_release_time(0) {}
 
   /**
    * @brief 入力状態を更新する（派生クラス実装）
@@ -82,16 +82,26 @@ private:
 public:
   /**
    * @brief コンストラクタ
+   * @param readFunction 入力関数
    * @param state_num 状態数（0 〜 state_num-1 を循環）
    * @param retrriger_delay 押下後の再入力無視時間[ms]
    */
-  StateSelectorFunc(const int state_num, const unsigned long retrriger_delay)
-   : read_func(nullptr), context(nullptr),StateSelector<T>(state_num, retrriger_delay){}
+  StateSelectorFunc(T (*readFunction)(void*) = nullptr, void* context = nullptr, const int state_num = 2, const unsigned long retrriger_delay = 10)
+    : read_func(readFunction), context(context), StateSelector<T>(state_num, retrriger_delay){}
+
+   /**
+   * @brief 委譲コンストラクタ
+   * @param state_num 状態数（0 〜 state_num-1 を循環）
+   * @param retrriger_delay 押下後の再入力無視時間[ms]
+   */
+  StateSelectorFunc(const int state_num = 2, const unsigned long retrriger_delay = 10)
+    : StateSelectorFunc(nullptr nullptr, state_num, retrriger_delay) {
+  }
 
   /**
    * @brief 入力関数とコンテキストを登録する
-   * @param readFunction 
-   * @param context 
+   * @param readFunction 入力関数
+   * @param context コンテキスト(入力関数に渡す引数)
    */
   void attachFunc(T (*readFunction)(void*), void* context){
     this->read_func = readFunction;
@@ -118,17 +128,28 @@ template<class Btn = Kiban::Button, typename T = bool>
 class StateSelectorMember : public StateSelector<T> {
 private:
   Btn& object;
-  T(Btn::*read_func)() = nullptr;  //function pointer
+  T(Btn::*read_func)();
 
 public:
   /**
    * @brief コンストラクタ
    * @param object 入力読み取り元オブジェクト
+   * @param read_function 入力を返すメンバ関数ポインタ
+   * @param state_num 状態数（状態は 0 〜 state_num-1 を循環）
+   * @param retrriger_delay 押下判定後に再入力を無視する時間[ms]
+   */
+  StateSelectorMember(Btn& object, T (Btn::*read_function)() = nullptr, const int state_num = 2, const unsigned long retrriger_delay = 10)
+    : object(object), read_func(read_function) ,StateSelector<T>(state_num, retrriger_delay) {
+  }
+
+  /**
+   * @brief 委譲コンストラクタ
+   * @param object 入力読み取り元オブジェクト
    * @param state_num 状態数（状態は 0 〜 state_num-1 を循環）
    * @param retrriger_delay 押下判定後に再入力を無視する時間[ms]
    */
   StateSelectorMember(Btn& object, const int state_num = 2, const unsigned long retrriger_delay = 10)
-    : object(object), StateSelector<T>(state_num, retrriger_delay) {
+    : StateSelectorMember(object, nullptr, state_num, retrriger_delay) {
   }
 
   /**
@@ -179,7 +200,7 @@ public:
    * @brief コンストラクタ
    * @param joystick 入力読み取り元ジョイスティックオブジェクト
    */
-  VectorStick(Joy& joystick): joystick(joystick) {}
+  VectorStick(Joy& joystick) : joystick(joystick) {}
 
   /**
    * @brief X/Y入力読み取り関数とデッドゾーンを設定する
@@ -252,6 +273,13 @@ public:
   bool isInnerXY(int x_min, int x_max, int y_min, int y_max) const {
     return (this->x_value >= x_min && this->x_value <= x_max && this->y_value >= y_min && this->y_value <= y_max);
   }
+
+  /**
+   * @brief 矩形範囲配列版の範囲判定
+   * @param x_area X範囲（[0]:下限, [1]:上限）
+   * @param y_area Y範囲（[0]:下限, [1]:上限）
+   * @return 範囲内なら true
+   */
   bool isInnerXY(int x_area[2], int y_area[2]){
     return this->isInnerXY(x_area[0],x_area[1],y_area[0],y_area[1]);
   }

@@ -2,8 +2,7 @@
  * @file HardwareInput.h
  * @brief Arduino / ESP32 向けハードウェア入力管理クラス群
  *
- * ボタン・トグル・ジョイスティックの入力クラスと、
- * それらを高レベルに扱う仮想入力クラス（vPushSwitch, vJoyStick）を提供します。
+ * ボタン・トグル・ジョイスティックの入力クラスを提供します。
  *
  * @author Tomoooji (https://github.com/Tomoooji)
  * @version 0.1

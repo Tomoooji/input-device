@@ -57,7 +57,7 @@ protected:
    */
   void _update(T reading){
     if (reading && !this->is_pressed) {
-      if (millis() - this->last_release_time > this->ignore_time) {
+      if (millis() - this->last_release_time > this->retrriger_delay) {
         this->current_state = (this->state_num + this->current_state + reading) % this->state_num;
         this->is_pressed = true;
       }
@@ -78,6 +78,7 @@ class StateSelectorFunc : public StateSelector<T>{
 private:
   T (*read_func)(void*);
   void* context;
+
 public:
   /**
    * @brief コンストラクタ
@@ -89,8 +90,10 @@ public:
 
   /**
    * @brief 入力関数とコンテキストを登録する
+   * @param readFunction 
+   * @param context 
    */
-  void attachFunc(){
+  void attachFunc(T (*readFunction)(void*), void* context){
     this->read_func = readFunction;
     this->context = context;
   }
@@ -272,7 +275,7 @@ public:
    * @param theta_range 角度範囲（[0]:下限, [1]:上限）[deg]
    * @return 範囲内なら true
    */
-  bool isInnerrTheta(float r_range[2], float theta_range[2]){
+  bool isInnerTheta(float r_range[2], float theta_range[2]){
     return this->isInnerRTheta(r_range[0],r_range[1],theta_range[0],theta_range[1]);
   }
 };

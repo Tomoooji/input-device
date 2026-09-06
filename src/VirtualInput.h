@@ -94,7 +94,7 @@ public:
    * @param retrriger_delay 押下後の再入力無視時間[ms]
    */
   StateSelectorFunc(const int state_num = 2, const unsigned long retrriger_delay = 10)
-    : StateSelectorFunc(nullptr nullptr, state_num, retrriger_delay) {
+    : StateSelectorFunc(nullptr, nullptr, state_num, retrriger_delay) {
   }
 
   /**

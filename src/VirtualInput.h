@@ -55,7 +55,7 @@ protected:
    * @brief 入力値から内部状態を更新する
    * @param reading 現在の入力値（押下時は 1/true を想定）
    */
-  void _update(T reading) {
+  void update(_T reading) {
     if (reading && !this->is_pressed) {
       if (millis() - this->last_release_time > this->retrriger_delay) {
         this->current_state = (this->state_num + this->current_state + reading) % this->state_num;
@@ -65,6 +65,19 @@ protected:
       this->is_pressed = false;
       this->last_release_time = millis();
     }
+  }
+};
+
+template <typename T>
+class StateSelectorValue : public StateSelector<T> {
+private:
+  T& value;
+
+public:
+  StateSelectorValue(T& value, const int state_num = 2, const unsigned long retrriger_delay = 10)
+    : value(value), StateSelector<T>(state_num, retrriger_delay) {}
+  void update() override {
+    return this->update_(this->value);
   }
 };
 
@@ -112,7 +125,7 @@ public:
    */
   void update() override {
     if (this->read_func != nullptr) {
-      this->_update(this->read_func(this->context));
+      this->update_(this->read_func(this->context));
     }
   }
 };
@@ -164,7 +177,7 @@ public:
    */
   void update() override {
     if (this->read_func != nullptr) {
-      this->_update((object.*read_func)());
+      this->update_((object.*read_func)());
     }
   }
 };

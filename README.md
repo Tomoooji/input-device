@@ -10,7 +10,7 @@ Arduino / ESP32 向けのハードウェア入力管理ライブラリです。
 
 ### `Kiban::Button`
 - 1つのデジタル入力をボタンとして扱います
-- `attach(pin, pullup)` で初期化し、`readPressed()` で押下状態を取得します
+- コンストラクタでピンへの参照と内蔵プルアップの仕様有無を指定、`begin()` で初期化し、`readPressed()` で押下状態を取得します
 
 ### `Kiban::Toggle`
 - 2つのボタン入力から上/下のトグル入力を作ります
@@ -44,11 +44,11 @@ Arduino / ESP32 向けのハードウェア入力管理ライブラリです。
 #include "VirtualInput.h"
 
 const uint8_t PIN_BUTTON = 2;
-Kiban::Button button;
+Kiban::Button button(PIN_BUTTON, true);
 StateSelectorMember<Kiban::Button, bool> modeSwitch(button, 3, 20);
 
 void setup() {
-  button.attach(&PIN_BUTTON, true);
+  button.begin();
   modeSwitch.attachFunc(&Kiban::Button::readPressed);
 }
 
@@ -68,11 +68,11 @@ const uint8_t PIN_X = 34;
 const uint8_t PIN_Y = 35;
 const uint8_t PIN_SW = 25;
 
-Kiban::Joystick joystick;
+Kiban::Joystick joystick(PIN_X, PIN_Y, PIN_SW, true);
 VectorStick<Kiban::Joystick> vjoy(joystick);
 
 void setup() {
-  joystick.attach(&PIN_X, &PIN_Y, &PIN_SW, true);
+  joystick.begin();
   joystick.setCenter();
   vjoy.attachFunc(&Kiban::Joystick::readX, &Kiban::Joystick::readY, 20, 20);
 }
@@ -91,5 +91,5 @@ void loop() {
 - `Kiban::Button` と `Kiban::Joystick` の押し込みボタン入力は、内蔵あるいは外部の抵抗を用いたプルアップ状態（押下時 LOW）を前提としています
 
 ---
-最終更新日 2026-09-05  
+最終更新日 2026-10-02  
 更新者 Tomoooji  

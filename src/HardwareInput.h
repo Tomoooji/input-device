@@ -25,27 +25,23 @@ namespace Kiban {
  */
 class Button {
 private:
-  const uint8_t* pin;
+  const uint8_t &pin;
   bool pulluped;
 
 public:
   /**
-   * @brief デフォルトコンストラクタ
+   * @brief コンストラクタ
    */
-  Button() = default;
+  Button(const uint8_t& pin, bool pullup = true) : pin(pin), pulluped(pullup) {}
 
   /**
    * @brief ボタン入力ピンを設定する
-   * @param pin 入力ピン番号へのポインタ
-   * @param pullup 内部プルアップを有効化するか（デフォルト: true）
    */
-  void attach(const uint8_t* pin, bool pullup = true) {
-    this->pin = pin;
-    this->pulluped = pullup;
+  void begin() {
 #ifdef ESP32
-    pinMode(*pin, this->pulluped && *pin < 34 ? INPUT_PULLUP : INPUT);
+    pinMode(this->pin, this->pulluped && thiz->pin < 34 ? INPUT_PULLUP : INPUT);
 #else
-    pinMode(*pin, this->pulluped ? INPUT_PULLUP : INPUT);
+    pinMode(this->pin, this->pulluped ? INPUT_PULLUP : INPUT);
 #endif
   }
 
@@ -54,7 +50,7 @@ public:
    * @return 押下中なら true
    */
   bool readPressed() {
-    return this->pin != nullptr && !digitalRead(*pin);
+    return digitalRead(this->pin) == this->pulluped;
   }
 };
 
@@ -64,34 +60,24 @@ public:
  */
 class Toggle {
 private:
-  Button button[2];
+  Button up, bown;
 
 public:
   /**
-   * @brief デフォルトコンストラクタ
+   * @brief コンストラクタ
    */
-  Toggle() : button{} {}
+  Toggle(Button &&up, Button &&down) : up(std::move(up)), down(std::move)) {}
+  Toggle(const uint8_t &pin_up, const uint8_t &pin_down, bool pullup_up = true, bool pullup_down = true)
+     : up(pin_up, pullup_up), down(pin_down, pullup_down) {}
+  Toggle(const uint8_t (&pins)[2], bool pullups[2] = nullptr)
+     : up(pin_up, pullups == nullptr ? true : pullups[0]), down(pin_down, pullups == nullptr ? true : pullups[1]) {}
 
   /**
    * @brief 上側/下側トグル入力ピンを設定する
-   * @param pinUp 上側入力ピン番号へのポインタ
-   * @param pinDown 下側入力ピン番号へのポインタ
-   * @param pullupUp 上側入力の内部プルアップ有効化
-   * @param pullupDown 下側入力の内部プルアップ有効化
    */
-  void attach(const uint8_t* pinUp, const uint8_t* pinDown, bool pullupUp = true, bool pullupDown = true) {
-    button[0].attach(pinUp, pullupUp);
-    button[1].attach(pinDown, pullupDown);
-  }
-
-  /**
-   * @brief 配列で上側/下側トグル入力ピンを設定する
-   * @param pins 入力ピン配列（[0]:上, [1]:下）
-   * @param pullupUp 上側入力の内部プルアップ有効化
-   * @param pullupDown 下側入力の内部プルアップ有効化
-   */
-  void attach(const uint8_t pins[2], bool pullupUp, bool pullupDown) {
-    this->attach(&pins[0], &pins[1], pullupUp, pullupDown);
+  void begin() {
+    up.begin();
+    down.begin();
   }
 
   /**
@@ -99,7 +85,7 @@ public:
    * @return 上:1 / 中立:0 / 下:-1
    */
   int readTilted() {
-    return button[0].readPressed() - button[1].readPressed();
+    return up.readPressed() - down.readPressed();
   }
 };
 

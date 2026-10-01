@@ -5,8 +5,8 @@
  * ボタン・トグル・ジョイスティックの入力クラスを提供します。
  *
  * @author Tomoooji (https://github.com/Tomoooji)
- * @version 0.1
- * @date 2026-09-05
+ * @version 1.0
+ * @date 2026-10-02
  * @copyright Copyright (c) 2026
  */
 
@@ -31,6 +31,8 @@ private:
 public:
   /**
    * @brief コンストラクタ
+   * @param pin ピンの参照
+   * @param pullup 内部プルアップの有効化
    */
   Button(const uint8_t& pin, bool pullup = true) : pin(pin), pulluped(pullup) {}
 
@@ -64,11 +66,27 @@ private:
 
 public:
   /**
-   * @brief コンストラクタ
+   * @brief コンストラクタ(ボタンオブジェクト用)
+   * @param up 上側のボタン入力オブジェクト(その場で宣言可能)
+   * @param down 下側のボタン入力オブジェクト(その場で宣言可能)
    */
-  Toggle(Button &&up, Button &&down) : up(std::move(up)), down(std::move)) {}
+  Toggle(Button up, Button down) : up(std::move(up)), down(std::move)) {}
+  
+  /**
+   * @brief コンストラクタ(個別ピン用)
+   * @param pin_up 上側のボタン入力ピンの参照
+   * @param pin_down 下側のボタン入力ピンの参照
+   * @param pullup_up 上側のボタンの内部プルアップ有効化
+   * @param pullup_down 下側のボタンの内部プルアップ有効化
+   */
   Toggle(const uint8_t &pin_up, const uint8_t &pin_down, bool pullup_up = true, bool pullup_down = true)
      : up(pin_up, pullup_up), down(pin_down, pullup_down) {}
+
+  /**
+   * @brief コンストラクタ(ピン配列用)
+   * @param pins ボタン入力ピン配列（[0]:上, [1]:下）の参照
+   * @param pullups ボタンの内部プルアップ有効化配列（[0]:上, [1]:下）
+   */
   Toggle(const uint8_t (&pins)[2], bool pullups[2] = nullptr)
      : up(pin_up, pullups == nullptr ? true : pullups[0]), down(pin_down, pullups == nullptr ? true : pullups[1]) {}
 
@@ -104,39 +122,35 @@ public:
 class Joystick {
 private:
   Button button;
-  const uint8_t* pinX;
-  const uint8_t* pinY;
+  const uint8_t &pinX;
+  const uint8_t &pinY;
   int xCenter = 1 << (ADC_RESOLUTION - 1);
   int yCenter = 1 << (ADC_RESOLUTION - 1);
 
 public:
   /**
-   * @brief デフォルトコンストラクタ
+   * @brief コンストラクタ(個別ピン用)
+   * @param pinX X軸アナログ入力ピンの参照
+   * @param pinY Y軸アナログ入力ピンの参照
+   * @param pinButton 押し込みボタン入力ピンの参照
+   * @param pullup ボタン入力の内部プルアップ有効化
    */
-  Joystick() : button{} {}
+  Joystick(const uint8_t &pinX, const uint8_t &pinY, const uint8_t &pinButton, bool pullup = true)
+     : pinX(pinX), pinY(pinY), button(pinButton, pullup) {}
+
+  /**
+   * @brief コンストラクタ(ピン配列用)
+   * @param pins 入力ピン配列（[0]:X, [1]:Y, [2]:ボタン）の参照
+   * @param pullup ボタン入力の内部プルアップ有効化
+   */
+  Joystick(const uint8_t (&pins)[3], bool pullup = true)
+     : pinX(pins[0]), pinY(pins[1]), button(pins[2], pullup) {}
 
   /**
    * @brief ジョイスティックの各ピンを設定する
-   * @param pinX X軸アナログ入力ピンへのポインタ
-   * @param pinY Y軸アナログ入力ピンへのポインタ
-   * @param pinButton 押し込みボタン入力ピンへのポインタ
-   * @param pullupButton ボタン入力の内部プルアップ有効化
    */
-  void attach(const uint8_t* pinX, const uint8_t* pinY, const uint8_t* pinButton, bool pullupButton = true) {
-    this->pinX = pinX;
-    this->pinY = pinY;
-    button.attach(pinButton, pullupButton);
-  }
-
-  /**
-   * @brief 配列でジョイスティックの各ピンを設定する
-   * @param pins 入力ピン配列（[0]:X, [1]:Y, [2]:ボタン）
-   * @param pullup ボタン入力の内部プルアップ有効化
-   */
-  void attach(const uint8_t pins[3], bool pullup = true) {
-    this->pinX = &pins[0];
-    this->pinY = &pins[1];
-    button.attach(&pins[2], pullup);
+  void begin() {
+    button.begin();
   }
 
   /**
@@ -153,9 +167,7 @@ public:
    * @brief 現在のアナログ値を中心値として設定する
    */
   void setCenter() {
-    if (this->pinX != nullptr && this->pinY != nullptr) {
-      this->setCenter(analogRead(*pinX), analogRead(*pinY));
-    }
+    this->setCenter(analogRead(this->pinX), analogRead(this->pinY));
   }
 
   /**
@@ -163,7 +175,7 @@ public:
    * @return X軸差分値
    */
   int readX() {
-    return this->pinX == nullptr ? 0 : analogRead(*pinX) - this->xCenter;
+    return analogRead(this->pinX) - this->xCenter;
   }
 
   /**
@@ -171,7 +183,7 @@ public:
    * @return Y軸差分値
    */
   int readY() {
-    return this->pinY == nullptr ? 0 : analogRead(*pinY) - this->yCenter;
+    return analogRead(this->pinY) - this->yCenter;
   }
 
   /**
@@ -179,7 +191,7 @@ public:
    * @return 押下中なら true
    */
   bool readPressed() {
-    return button.readPressed();
+    return this->button.readPressed();
   }
 };
 

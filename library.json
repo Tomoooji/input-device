@@ -1,0 +1,31 @@
+{
+  "name": "Input Device",
+  "version": "1.0.0",
+  "description": "Hardware input management library for Arduino and ESP32",
+  "keywords": [
+    "input",
+    "button",
+    "toggle",
+    "joystick",
+    "arduino",
+    "esp32"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Tomoooji/input-device.git"
+  },
+  "authors": [
+    {
+      "name": "Tomoji Kanae",
+      "url": "https://github.com/Tomoooji",
+      "maintainer": true
+    }
+  ],
+  "license": "MIT",
+  "frameworks": "arduino",
+  "platforms": "*",
+  "headers": [
+    "HardwareInput.h",
+    "VirtualInput.h"
+  ]
+}

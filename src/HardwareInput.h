@@ -196,50 +196,60 @@ public:
   }
 };
 
-enum ENCODER_TYPE {
+enum class ENCODER_TYPE {
   SINGLEEDGE, HALFQUAD, FULLQUAD
 };
 
 #ifdef ESP32
 #include <ESP32Encoder.h>
 
-template <ENCODER_TYPE TYPE = HALFQUAD>
+template <ENCODER_TYPE TYPE>
 class Encoder {
 private:
   ESP32Encoder encoder_;
   const uint8_t &pinA;
   const uint8_t &pinB;
   const bool pulluped;
-  const long lap_count;
+  const long counts_per_revolution;
 public:
-  Encoder(const uint8_t &pinA, const uint8_t &pinB, const bool pullup = true, const long lapCount = 0)
-   : encoder_(), pinA(pinA), pinB(pinB), pulluped(pullup), lap_count(lapCount) {}
-  Encoder(const uint8_t (&pins)[2], const bool pullup = true, const long lapCount = 0)
-   : Encoder(pins[0], pins[1], pullup, lapCount) {}
+  Encoder(const uint8_t &pinA, const uint8_t &pinB, const bool pullup = true, const long counts_per_revolution = 0)
+   : encoder_(), pinA(pinA), pinB(pinB), pulluped(pullup), counts_per_revolution(counts_per_revolution) {}
+  Encoder(const uint8_t (&pins)[2], const bool pullup = true, const long counts_per_revolution = 0)
+   : Encoder(pins[0], pins[1], pullup, counts_per_revolution) {}
   
   void begin() {
     if (this->pulluped) ESP32Encoder::useInternalWeakPullResistors = puType::up;
-    switch (TYPE) {
-      case SINGLEEDGE:
+    if constexpr (TYPE == SINGLEEDGE) {
         this->encoder_.attachSingleEdge(this->pinA, pinB);
-        break;
-      case HALFQUAD:
-        this->encoder_.attachHalfQuad(this->pinA, pinB);
-        break;
-      case FULLQUAD:
-        this->encoder_.attachFullQuad(this->pinA, pinB);
-        break;
     }
-    this->encoder_.clearCount();
+    else if constexpr (TYPE == HALFQUAD) {
+        this->encoder_.attachHalfQuad(this->pinA, pinB);
+    }
+    else if constexpr (TYPE == FULLQUAD) {
+        this->encoder_.attachFullQuad(this->pinA, pinB);
+    }
+    this->reset();
   }
   
   void reset() { this->encoder_.clearCount(); }
   
   int read() { return this->encoder.getCount(); }
   
-  float getAngleDeg() { return this->read() / this->lap_count * 180; }
+  float getAngleDeg() {
+    if (this->counts_per_revolution) {
+      return static_cast<float>(this->read()) / this->counts_per_revolution * 180.0f;
+    else {
+      return 0.0f;
+    }
+  }
   
-  float getAngleRad() { return this->read() / this->lap_count * TWO_PI; }
+  float getAngleRad() {
+    if (this->counts_per_revolution) {
+      return static_cast<float>(this->read()) / this->counts_per_revolution * TWO_PI;
+    else {
+      return 0.0f;
+    }
+  }
 };
 
 #else
@@ -247,50 +257,62 @@ public:
 template <uint8_t ID, ENCODER_TYPE TYPE>
 class EncoderClass {
 private:
-  inline staic Encoder<TYPE, ID> *instance;
+  inline static EncoderClass<TYPE, ID> *instance;
   const uint8_t &pinA;
   const uint8_t &pinB;
   const bool pulluped;
-  consr long lap_count;
+  const long counts_per_revolution;
   std::atomic<long> count;
   
   static void countISR () {
-    instance_->count.store(instance_->count.load() +
+    instance->count.fetch_add(
       (digitalRead(instance->pinA) == digitalRead(instance->pinB) ? 1 : -1)
     );
   }
 
-piblic:
-  Encoder(const uint8_t &pinA, const uint8_t &pinB, const bool pullup = true, const long lapCount = 0)
-   : pinA(pinA), pinB(pinB), pulluped(pullup), lap_count(lapCount) {}
+public:
+  Encoder(const uint8_t &pinA, const uint8_t &pinB, const bool pullup = true, const long counts_per_revolution = 0)
+   : pinA(pinA), pinB(pinB), pulluped(pullup), counts_per_revolution(counts_per_revolution) {
+    instance = this;
+  }
   
-  Encoder(const uint8_t (&pins)[2], const bool pullup = true, const long lapCount = 0)
-   : Encoder(pins[0], pins[1], pullup, lapCount) {}
+  Encoder(const uint8_t (&pins)[2], const bool pullup = true, const long counts_per_revolution = 0)
+   : Encoder(pins[0], pins[1], pullup, counts_per_revolution) {}
 
   void begin() {
     pinMode(this->pinA, this->pulluped ? INPUT_PULLUP : INPUT);
     pinMode(this->pinB, this->pulluped ? INPUT_PULLUP : INPUT);
-    switch (TYPE) {
-      case SINGLEDGE:
-        attachInterrupt(digitalPinToInterrupt(this->pinA), countISR, RASING);
-        break;
-      case HALFQUAD:
-        attachInterrupt(digitalPinToInterrupt(this->pinA), countISR, CHANGE);
-        break;
-      case FULLQUAD:
+    if constexpr (TYPE == SINGLEEDGE) {
+      attachInterrupt(digitalPinToInterrupt(this->pinA), countISR, RAISING);
+    }
+    else if constexpr (TYPE == HALFQUAD) {
+      attachInterrupt(digitalPinToInterrupt(this->pinA), countISR, CHANGE);
+    }
+    else if constexpr (TYPE == FULLQUAD) {
         attachInterrupt(digitalPinToInterrupt(this->pinA), countISR, CHANGE);
         attachInterrupt(digitalPinToInterrupt(this->pinB), countISR, CHANGE);
-        break;
     }
   }
   
-  void reset() { return this->count.store(0); }
+  void reset() { this->count.store(0); }
   
   int read() { return this->count.load(); }
   
-  float getAngleDeg() { return this->read() / this->lap_count * 180; }
+  float getAngleDeg() {
+    if (this->counts_per_revolution) {
+      return static_cast<float>(this->read()) / this->counts_per_revolution * 180.0f;
+    else {
+      return 0.0f;
+    }
+  }
   
-  float getAngleRad() { return this->read() / this->lap_count * TWO_PI; }
+  float getAngleRad() {
+    if (this->counts_per_revolution) {
+      return static_cast<float>(this->read()) / this->counts_per_revolution * TWO_PI;
+    else {
+      return 0.0f;
+    }
+  }
 };
 
 #define Encoder(ENCODER_TYPE) EncoderClass<__COUNTER__, ENCODER_TYPE>

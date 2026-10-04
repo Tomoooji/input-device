@@ -196,4 +196,56 @@ public:
   }
 };
 
+#ifdef ESP32
+#include <ESP32Encoder.h>
+
+enum ENCODER_TYPE {
+  SINGLEEDGE, HALFQUAD, FULLQUAD
+};
+
+template <ENCODER_TYPE TYPE = HALFQUAD>
+class Encoder {
+private:
+  ESP32Encoder encoder_;
+  const uint8_t &pinA;
+  const uint8_t &pinB;
+  const bool pulluped;
+  const long lap_count;
+public:
+  Encoder(const uint8_t &pinA, const uint8_t &pinB, const bool pullup = true, const long lapCount = 0)
+   : envoder_(), pinA(pinA), pinB(pinB), pulluped(pullup), lap_count(lapCount) {}
+  Encoder(const uint8_t (&pins)[2], const bool pullup = true, const long lapCount = 0)
+   : Encoder(pins[0], pins[1], pullup, lapCount) {}
+  
+  void begin() {
+    if (this->pulluped) ESP32Encoder::useInternalWeakPullResistors = puType::up;
+    switch TYPE {
+      case SINGLEEDGE:
+        this->encoder_.attachSingleEdge(this->pinA, pinB);
+        break;
+      case HALFQUAD:
+        this->encoder_.attachHalfQuad(this->pinA, pinB);
+        break;
+      case FULLQUAD:
+        this->encoder_.attachFullQuad(this->pinA, pinB);
+        break;
+    }
+    this->encoder_.clearCount();
+  }
+  
+  void reset() { this->encoder_.clearCount(); }
+  
+  int read() {
+    return this->encoder.getCount();
+  }
+  
+  float getAngleDeg() {
+    return this->read() / this->lap_count * 180;
+  }
+  
+  float getAngleRad() {
+    return this->read() / this->lap_count * TWO_PI;
+  }
+};
+#endif
 };

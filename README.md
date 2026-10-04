@@ -10,7 +10,7 @@ Arduino / ESP32 向けのハードウェア入力管理ライブラリです。
 
 ### `Kiban::Button`
 - 1つのデジタル入力をボタンとして扱います
-- `attach(pin, pullup)` で初期化し、`readPressed()` で押下状態を取得します
+- コンストラクタでピンへの参照と内蔵プルアップの仕様有無を指定、`begin()` で初期化し、`readPressed()` で押下状態を取得します
 
 ### `Kiban::Toggle`
 - 2つのボタン入力から上/下のトグル入力を作ります
@@ -21,6 +21,14 @@ Arduino / ESP32 向けのハードウェア入力管理ライブラリです。
 - `setCenter()` で現在値を中心として補正できます
 - `readX()`, `readY()` は中心との差分を返します
 - `readPressed()`はボタンの押下状態を返します
+
+### `Kiban::Encoder<Kiban::ENCODER_TYPE>`
+- [ESP32Controllerライブラリ](https://github.com/madhephaestus/ESP32Encoder)のラッパー
+- テンプレート引数でパルスの検出形式(SINGLEEDGE/HALFQUAD/FULLQUAD)を指定します
+- ESP32以外ではEncoderClassクラスにテンプレート引数で割り当てるIDを自動で補完するマクロとして機能します  
+  実体化を行わずに型宣言のみ行うような場合はEncoderClass<ID, ENCODER_TYPE>を直接使うか、CTADを用いた保管を利用してください。  
+- `reset()`でカウントを初期化します
+- `read()`でカウント数、`getAngleDeg()`と`getAngleRad()`でそれぞれ度数法と弧度法による角度を取得できます
 
 ### `StateSelectorFunc<T>`
 - 任意の入力関数を仮想プッシュスイッチとして扱うテンプレートクラスです
@@ -44,11 +52,11 @@ Arduino / ESP32 向けのハードウェア入力管理ライブラリです。
 #include "VirtualInput.h"
 
 const uint8_t PIN_BUTTON = 2;
-Kiban::Button button;
+Kiban::Button button(PIN_BUTTON, true);
 StateSelectorMember<Kiban::Button, bool> modeSwitch(button, 3, 20);
 
 void setup() {
-  button.attach(&PIN_BUTTON, true);
+  button.begin();
   modeSwitch.attachFunc(&Kiban::Button::readPressed);
 }
 
@@ -68,11 +76,11 @@ const uint8_t PIN_X = 34;
 const uint8_t PIN_Y = 35;
 const uint8_t PIN_SW = 25;
 
-Kiban::Joystick joystick;
+Kiban::Joystick joystick(PIN_X, PIN_Y, PIN_SW, true);
 VectorStick<Kiban::Joystick> vjoy(joystick);
 
 void setup() {
-  joystick.attach(&PIN_X, &PIN_Y, &PIN_SW, true);
+  joystick.begin();
   joystick.setCenter();
   vjoy.attachFunc(&Kiban::Joystick::readX, &Kiban::Joystick::readY, 20, 20);
 }
@@ -91,5 +99,5 @@ void loop() {
 - `Kiban::Button` と `Kiban::Joystick` の押し込みボタン入力は、内蔵あるいは外部の抵抗を用いたプルアップ状態（押下時 LOW）を前提としています
 
 ---
-最終更新日 2026-09-05  
+最終更新日 2026-10-05  
 更新者 Tomoooji  

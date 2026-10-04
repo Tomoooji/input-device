@@ -235,49 +235,65 @@ public:
   
   void reset() { this->encoder_.clearCount(); }
   
-  int read() {
-    return this->encoder.getCount();
-  }
+  int read() { return this->encoder.getCount(); }
   
-  float getAngleDeg() {
-    return this->read() / this->lap_count * 180;
-  }
+  float getAngleDeg() { return this->read() / this->lap_count * 180; }
   
-  float getAngleRad() {
-    return this->read() / this->lap_count * TWO_PI;
-  }
+  float getAngleRad() { return this->read() / this->lap_count * TWO_PI; }
 };
 
 #else
 
-template <ENCODER_TYPE TYPE = HALFQUAD>
-class Encoder {
+template <uint8_t ID, ENCODER_TYPE TYPE>
+class EncoderClass {
 private:
+  inline staic Encoder<TYPE, ID> *instance;
   const uint8_t &pinA;
   const uint8_t &pinB;
   const bool pulluped;
   consr long lap_count;
-public:
+  std::atomic<long> count;
+  
+  static void countISR () {
+    instance_->count.store(instance_->count.load() +
+      (digitalRead(instance->pinA) == digitalRead(instance->pinB) ? 1 : -1)
+    );
+  }
+
+piblic:
   Encoder(const uint8_t &pinA, const uint8_t &pinB, const bool pullup = true, const long lapCount = 0)
    : pinA(pinA), pinB(pinB), pulluped(pullup), lap_count(lapCount) {}
+  
   Encoder(const uint8_t (&pins)[2], const bool pullup = true, const long lapCount = 0)
    : Encoder(pins[0], pins[1], pullup, lapCount) {}
-  
+
   void begin() {
     pinMode(this->pinA, this->pulluped ? INPUT_PULLUP : INPUT);
     pinMode(this->pinB, this->pulluped ? INPUT_PULLUP : INPUT);
     switch (TYPE) {
       case SINGLEDGE:
-        
+        attachInterrupt(digitalPinToInterrupt(this->pinA), countISR, RASING);
         break;
       case HALFQUAD:
+        attachInterrupt(digitalPinToInterrupt(this->pinA), countISR, CHANGE);
         break;
       case FULLQUAD:
+        attachInterrupt(digitalPinToInterrupt(this->pinA), countISR, CHANGE);
+        attachInterrupt(digitalPinToInterrupt(this->pinB), countISR, CHANGE);
         break;
     }
   }
-
+  
+  void reset() { return this->count.store(0); }
+  
+  int read() { return this->count.load(); }
+  
+  float getAngleDeg() { return this->read() / this->lap_count * 180; }
+  
+  float getAngleRad() { return this->read() / this->lap_count * TWO_PI; }
 };
+
+#define Encoder(ENCODER_TYPE) EncoderClass<__COUNTER__, ENCODER_TYPE>
 
 #endif
 

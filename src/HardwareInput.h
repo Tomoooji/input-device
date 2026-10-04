@@ -52,7 +52,7 @@ public:
    * @brief ボタン押下状態を読み取る
    * @return 押下中なら true
    */
-  bool readPressed() { return digitalRead(this->pin) == this->pulluped; }
+  bool readPressed() { return digitalRead(this->pin) != this->pulluped; }
 };
 
 /**
@@ -257,7 +257,7 @@ public:
   /** @brief 回転量を角度(度数法)として読む関数 */
   float getAngleDeg() {
     if (this->counts_per_revolution) {
-      return static_cast<float>(this->read()) / this->counts_per_revolution * 180.0f;
+      return static_cast<float>(this->read()) / this->counts_per_revolution * 360.0f;
     } else {
       return 0.0f;
     }
@@ -345,7 +345,7 @@ public:
   /** @brief 回転量を角度(度数法)として読む関数 */
   float getAngleDeg() {
     if (this->counts_per_revolution) {
-      return static_cast<float>(this->read()) / this->counts_per_revolution * 180.0f;
+      return static_cast<float>(this->read()) / this->counts_per_revolution * 360.0f;
     } else {
       return 0.0f;
     }

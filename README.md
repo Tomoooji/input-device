@@ -22,7 +22,7 @@ Arduino / ESP32 向けのハードウェア入力管理ライブラリです。
 - `readX()`, `readY()` は中心との差分を返します
 - `readPressed()`はボタンの押下状態を返します
 
-### `Kiban::Encoder<kiban::ENCODER_TYPE>`
+### `Kiban::Encoder<Kiban::ENCODER_TYPE>`
 - [ESP32Controllerライブラリ](https://github.com/madhephaestus/ESP32Encoder)のラッパー
 - テンプレート引数でパルスの検出形式(SINGLEEDGE/HALFQUAD/FULLQUAD)を指定します
 - ESP32以外ではEncoderClassクラスにテンプレート引数で割り当てるIDを自動で補完するマクロとして機能します  

@@ -262,17 +262,15 @@ private:
   const uint8_t &pinB;
   const bool pulluped;
   const long counts_per_revolution;
-  std::atomic<long> count;
+  volatile long count;
   
   static void countISR () {
-    instance->count.fetch_add(
-      (digitalRead(instance->pinA) == digitalRead(instance->pinB) ? 1 : -1)
-    );
+    instance->count += (digitalRead(instance->pinA) == digitalRead(instance->pinB) ? 1 : -1);
   }
 
 public:
   Encoder(const uint8_t &pinA, const uint8_t &pinB, const bool pullup = true, const long counts_per_revolution = 0)
-   : pinA(pinA), pinB(pinB), pulluped(pullup), counts_per_revolution(counts_per_revolution) {
+   : pinA(pinA), pinB(pinB), pulluped(pullup), counts_per_revolution(counts_per_revolution), count(0) {
     instance = this;
   }
   
@@ -292,11 +290,12 @@ public:
         attachInterrupt(digitalPinToInterrupt(this->pinA), countISR, CHANGE);
         attachInterrupt(digitalPinToInterrupt(this->pinB), countISR, CHANGE);
     }
+    this->reset();
   }
   
-  void reset() { this->count.store(0); }
+  void reset() { this->count = 0; }
   
-  int read() { return this->count.load(); }
+  int read() { return this->count; }
   
   float getAngleDeg() {
     if (this->counts_per_revolution) {

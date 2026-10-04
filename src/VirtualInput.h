@@ -7,7 +7,7 @@
  *
  * @author Tomoooji (https://github.com/Tomoooji)
  * @version 0.1
- * @date 2026-09-05
+ * @date 2026-10-05
  * @copyright Copyright (c) 2026
  */
 
@@ -55,7 +55,7 @@ protected:
    * @brief 入力値から内部状態を更新する
    * @param reading 現在の入力値（押下時は 1/true を想定）
    */
-  void update(_T reading) {
+  void update_(T reading) {
     if (reading && !this->is_pressed) {
       if (millis() - this->last_release_time > this->retrriger_delay) {
         this->current_state = (this->state_num + this->current_state + reading) % this->state_num;
@@ -319,7 +319,7 @@ public:
    * @param theta_range 角度範囲（[0]:下限, [1]:上限）[deg]
    * @return 範囲内なら true
    */
-  bool isInnerTheta(float r_range[2], float theta_range[2]) {
+  bool isInnerRTheta(float (&r_range)[2], float (&theta_range)[2]) {
     return this->isInnerRTheta(r_range[0], r_range[1], theta_range[0], theta_range[1]);
   }
 };

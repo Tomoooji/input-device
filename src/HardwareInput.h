@@ -6,7 +6,7 @@
  *
  * @author Tomoooji (https://github.com/Tomoooji)
  * @version 1.0
- * @date 2026-10-04
+ * @date 2026-10-05
  * @copyright Copyright (c) 2026
  */
 
@@ -42,7 +42,7 @@ public:
    */
   void begin() {
 #ifdef ESP32
-    pinMode(this->pin, this->pulluped && thiz->pin < 34 ? INPUT_PULLUP : INPUT);
+    pinMode(this->pin, this->pulluped && this->pin < 34 ? INPUT_PULLUP : INPUT);
 #else
     pinMode(this->pin, this->pulluped ? INPUT_PULLUP : INPUT);
 #endif
@@ -61,7 +61,7 @@ public:
  */
 class Toggle {
 private:
-  Button up, bown;
+  Button up, down;
 
 public:
   /**
@@ -87,7 +87,7 @@ public:
    * @param pullups ボタンの内部プルアップ有効化配列（[0]:上, [1]:下）
    */
   Toggle(const uint8_t (&pins)[2], bool pullups[2] = nullptr)
-      : up(pin_up, pullups == nullptr ? true : pullups[0]), down(pin_down, pullups == nullptr ? true : pullups[1]) {}
+      : up(pins[0], pullups == nullptr ? true : pullups[0]), down(pins[1], pullups == nullptr ? true : pullups[1]) {}
 
   /**
    * @brief 上側/下側トグル入力ピンを設定する
@@ -210,7 +210,7 @@ private:
   const uint8_t &pinA;
   const uint8_t &pinB;
   const bool pulluped;
-  const long counts_per_revolution;
+  const int counts_per_revolution;
 
 public:
   /**
@@ -221,7 +221,7 @@ public:
    * @param pullup 内蔵プルアップの有効化
    * @param counts_per_revolution 一周あたりのパルス数
    */
-  Encoder(const uint8_t &pinA, const uint8_t &pinB, const bool pullup = true, const long counts_per_revolution = 0)
+  Encoder(const uint8_t &pinA, const uint8_t &pinB, const bool pullup = true, const int counts_per_revolution = 0)
       : encoder_(), pinA(pinA), pinB(pinB), pulluped(pullup), counts_per_revolution(counts_per_revolution * TYPE) {}
 
   /**
@@ -231,7 +231,7 @@ public:
    * @param pullup 内蔵プルアップの有効化
    * @param counts_per_revolution 一周あたりのパルス数
    */
-  Encoder(const uint8_t (&pins)[2], const bool pullup = true, const long counts_per_revolution = 0)
+  Encoder(const uint8_t (&pins)[2], const bool pullup = true, const int counts_per_revolution = 0)
       : Encoder(pins[0], pins[1], pullup, counts_per_revolution) {}
 
   /** @brief ピンの設定を行う初期化関数 */
@@ -252,7 +252,7 @@ public:
   void reset() { this->encoder_.clearCount(); }
 
   /** @brief 直前のリセット以降に回転した量を取得する関数 */
-  int read() { return this->encoder.getCount(); }
+  int read() { return this->encoder_.getCount(); }
 
   /** @brief 回転量を角度(度数法)として読む関数 */
   float getAngleDeg() {
@@ -285,12 +285,12 @@ public:
 template <uint8_t ID, ENCODER_TYPE TYPE>
 class EncoderClass {
 private:
-  inline static EncoderClass<TYPE, ID> *instance;
+  inline static EncoderClass<ID, TYPE> *instance;
   const uint8_t &pinA;
   const uint8_t &pinB;
   const bool pulluped;
-  const long counts_per_revolution;
-  volatile long count;
+  const int counts_per_revolution;
+  volatile int count;
 
   /** @brief パルスから回転量を求めるISR */
   static void countISR() {
@@ -306,8 +306,8 @@ public:
    * @param pullup 内蔵プルアップの有効化
    * @param counts_per_revolution 一周あたりのパルス数
    */
-  EncoderClass(const uint8_t &pinA, const uint8_t &pinB, const bool pullup = true, const long counts_per_revolution = 0)
-      : pinA(pinA), pinB(pinB), pulluped(pullup), counts_per_revolution(counts_per_revolution), count(0) {
+  EncoderClass(const uint8_t &pinA, const uint8_t &pinB, const bool pullup = true, const int counts_per_revolution = 0)
+      : pinA(pinA), pinB(pinB), pulluped(pullup), counts_per_revolution(counts_per_revolution * TYPE), count(0) {
     instance = this;
   }
 
@@ -318,7 +318,7 @@ public:
    * @param pullup 内蔵プルアップの有効化
    * @param counts_per_revolution 一周あたりのパルス数
    */
-  EncoderClass(const uint8_t (&pins)[2], const bool pullup = true, const long counts_per_revolution = 0)
+  EncoderClass(const uint8_t (&pins)[2], const bool pullup = true, const int counts_per_revolution = 0)
       : EncoderClass(pins[0], pins[1], pullup, counts_per_revolution) {}
 
   /** @brief ピンの設定を行う初期化関数 */

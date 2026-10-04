@@ -6,7 +6,7 @@
  *
  * @author Tomoooji (https://github.com/Tomoooji)
  * @version 1.0
- * @date 2026-10-02
+ * @date 2026-10-04
  * @copyright Copyright (c) 2026
  */
 
@@ -196,12 +196,12 @@ public:
   }
 };
 
-#ifdef ESP32
-#include <ESP32Encoder.h>
-
 enum ENCODER_TYPE {
   SINGLEEDGE, HALFQUAD, FULLQUAD
 };
+
+#ifdef ESP32
+#include <ESP32Encoder.h>
 
 template <ENCODER_TYPE TYPE = HALFQUAD>
 class Encoder {
@@ -213,13 +213,13 @@ private:
   const long lap_count;
 public:
   Encoder(const uint8_t &pinA, const uint8_t &pinB, const bool pullup = true, const long lapCount = 0)
-   : envoder_(), pinA(pinA), pinB(pinB), pulluped(pullup), lap_count(lapCount) {}
+   : encoder_(), pinA(pinA), pinB(pinB), pulluped(pullup), lap_count(lapCount) {}
   Encoder(const uint8_t (&pins)[2], const bool pullup = true, const long lapCount = 0)
    : Encoder(pins[0], pins[1], pullup, lapCount) {}
   
   void begin() {
     if (this->pulluped) ESP32Encoder::useInternalWeakPullResistors = puType::up;
-    switch TYPE {
+    switch (TYPE) {
       case SINGLEEDGE:
         this->encoder_.attachSingleEdge(this->pinA, pinB);
         break;
@@ -247,5 +247,38 @@ public:
     return this->read() / this->lap_count * TWO_PI;
   }
 };
+
+#else
+
+template <ENCODER_TYPE TYPE = HALFQUAD>
+class Encoder {
+private:
+  const uint8_t &pinA;
+  const uint8_t &pinB;
+  const bool pulluped;
+  consr long lap_count;
+public:
+  Encoder(const uint8_t &pinA, const uint8_t &pinB, const bool pullup = true, const long lapCount = 0)
+   : pinA(pinA), pinB(pinB), pulluped(pullup), lap_count(lapCount) {}
+  Encoder(const uint8_t (&pins)[2], const bool pullup = true, const long lapCount = 0)
+   : Encoder(pins[0], pins[1], pullup, lapCount) {}
+  
+  void begin() {
+    pinMode(this->pinA, this->pulluped ? INPUT_PULLUP : INPUT);
+    pinMode(this->pinB, this->pulluped ? INPUT_PULLUP : INPUT);
+    switch (TYPE) {
+      case SINGLEDGE:
+        
+        break;
+      case HALFQUAD:
+        break;
+      case FULLQUAD:
+        break;
+    }
+  }
+
+};
+
 #endif
+
 };
